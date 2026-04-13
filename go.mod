@@ -1,4 +1,4 @@
-module common-utils
+module github.com/engrotech/common-utils
 
 go 1.24.6
 

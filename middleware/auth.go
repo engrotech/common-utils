@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"common-utils/utils"
+	"github.com/engrotech/common-utils/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
