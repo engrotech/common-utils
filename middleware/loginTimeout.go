@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"common/utils"
+	"common-utils/utils"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
