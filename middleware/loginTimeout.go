@@ -21,24 +21,46 @@ func LoginTimeout(twoFAChallenges *mongo.Collection) fiber.Handler {
 	}
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
+
+		session, ok := c.Locals("session").(bson.M)
+		if !ok {
+			return unauthorized(c)
+		}
+
+		// Extract deviceId
+		deviceID, ok := session["deviceId"].(string)
+		if !ok || deviceID == "" {
+			return unauthorized(c)
+		}
+
+		markLogout := func() {
+			_, _ = twoFAChallenges.UpdateOne(
+				c.Context(),
+				bson.M{"userId": userId, "deviceId": deviceID},
+				bson.M{"$set": bson.M{"status": "logout", "updatedAt": time.Now()}},
+			)
+		}
+
 		var doc bson.M
 		err := twoFAChallenges.FindOne(c.Context(), bson.M{
-			"userId": userId,
+			"userId":   userId,
+			"deviceId": deviceID,
 		}).Decode(&doc)
 		if err != nil {
 			// If there's no challenge doc, let Verify2FA return its existing error.
-
+			markLogout()
 			return requestTimeout(c)
 		}
 		updatedAt, ok := utils.BSONDateToTime(doc["updatedAt"])
 		if !ok {
-
+			markLogout()
 			return requestTimeout(c)
 		}
 		now := time.Now()
 		y1, m1, d1 := now.Date()
 		y2, m2, d2 := updatedAt.Date()
 		if y1 != y2 || m1 != m2 || d1 != d2 {
+			markLogout()
 			return requestTimeout(c)
 		}
 		return c.Next()
